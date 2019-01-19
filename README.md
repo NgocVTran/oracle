@@ -1,1 +1,1 @@
-# oracle-fundamental
+# Tutorial with Oracle 11g

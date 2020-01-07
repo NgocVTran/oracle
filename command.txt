@@ -1,0 +1,733 @@
+/*================= set up ==============*/
+1. set up scott account
+info about account 
+- hr/123123
+- oe/123123
+
+alter user scott account unlock
+alter user scott identified by tiger;
+conn scott/tiger
+
+alter user scott identified by 123456 account unlock;
+
+Note: run sys/123123 account in folder:
+C:\Oracle\product\12.1.0\dbhome_1\BIN
+
+sqlplus /nolog
+connect sys /as sysdba
+
+Note: chua test
+-- list system privileges for the user or role
+SELECT * FROM dba_sys_privs
+WHERE grantee IN (&user_role, 'PUBLIC');
+ 
+
+-- list object privileges for the user or role
+SELECT grantee, owner||'.'||table_name object, privilege, grantable
+FROM dba_tab_privs
+WHERE grantee IN (&user_role)
+ORDER BY grantee, owner||'.'||table_name, privilege;
+
+-- Oracle 12c create new user:
+ALTER SESSION SET "_ORACLE_SCRIPT"=true;
+CREATE USER learning IDENTIFIED BY 123123;
+
+grant CREATE SESSION, ALTER SESSION, CREATE DATABASE LINK, CREATE MATERIALIZED VIEW, 
+	  CREATE PROCEDURE, CREATE PUBLIC SYNONYM, CREATE ROLE, CREATE SEQUENCE, 
+	  CREATE SYNONYM, CREATE TABLE, CREATE TRIGGER, CREATE TYPE, CREATE VIEW, 
+	  UNLIMITED TABLESPACE 
+to learning;
+
+
+/*===================================*/
+0. Lenh tong hop:
+. show current user:
+show user
+. 
+
+1. Chon tat ca table cua 1 user 
+select table_name
+from all_tables 
+where owner = 'scott';
+
+select table_name 
+from user_tables;
+
+
+2. number(precision, scale)
+
+/*=========================== CHAP 2 =======================*/
+FORMAT:
+1.
+select distinct * from table;
+
+2.
+select 
+	'THE ' ||region_name|| 'REGION IS ON PLANET' as "Planetery Location",
+	region_id*100*5 as "Meteor prob",
+	region_id
+from regions;
+
+3.
+select 'this is text''s random''s usual' from dual;
+
+4. missing NULL value:
+employees has nullable department_id value. But department_id is foreigkey to table department. And department_id in department is not allowed to be NULL.
+-> chap 7
+
+
+
+Question:
+1. 
+select distinct department_id from employees;
+
+2.
+select distinct c.country_name 
+from countries c, regions r
+where c.region_id = r.region_id
+and r.region_name = 'Europe';
+
+Part:
+3. 
+select employee_id, job_id, start_date, end_date, (end_date - start_date)+1 "Days employed" 
+from job_history;
+
+
+4. Expression and column aliasing
+select 'The '||region_name||' region is on planet earth' "Planetary Location",
+	region_id*100/5 + 20/(10 - 5) "Meteor Shower Probability %",
+	region_id "Region ID"
+from regions;
+
+5. Character and string concatenation operator
+select employee_id as "Employee ID", first_name, last_name
+from employees;
+
+6. Literal and the DUAL table
+select 'literal'||'processing using the REGIONS table'
+from regions;
+
+select 365.25*24*60*60 "Second in year" from dual;
+
+select 'Plural''s have''s one [] QUOTE too many' "So many quotes" from dual;
+
+
+Question:
+7.
+select employee_id, job_id, start_date, end_date, ((end_date-start_date)+1)/365.25 "Years employed"
+from job_history;
+
+8.
+select 'The job ID for the '||job_title||'''s job is: '||job_id
+as "Job Description"
+from jobs;
+
+9. 
+select (22/7)*6000*6000 "Area"
+from dual;
+
+
+/*=========================== CHAP 3 =======================*/
+rem ============ restricting and sorting data =============
+
+1. Numeric-Based Conditions
+select last_name, salary from employees where salary = 10000;
+select last_name, salary from employees where salary = '10000';
+
+
+2. Character-Based Conditions
+(work) 		select last_name from employees where job_id='SA_REP';
+(not work) 	select last_name from employees where job_id=SA_REP;
+
+desc employees
+JOB_ID		NOT NULL VARCHAR2(10)
+
+
+3. Date-Based Conditions
+select employee_id, job_id, last_name
+from employees
+where 'SA_REP'||'King' = job_id || last_name;
+
+. So sanh 2 format date
+select employee_id from job_history
+where start_date = end_date;
+
+. So sanh qua format date
+select employee_id from job_history
+where start_date = '01-JAN-2001';
+
+select employee_id from job_history
+where start_date = '01-JAN-01';
+
+select employee_id from job_history
+where start_date = '01-JANUARY-07';
+
+select employee_id from job_history
+where start_date = '01-JANUARY-2007';
+
+select employee_id from job_history
+where start_date = '01-JANUARY-2007';
+
+If a literal occurs in an expression involving a DATE column, it is automatically converted into a date value using the default format mask. DD represents days, MON represents the first three letters of a month, and RR represents a Year 2000–compliant year (that is, if RR is between 50 and 99, then the Oracle server returns the previous century, else it returns the current century).
+/*
+insert into job_history(employee_id,start_date,end_date,job_id,department_id) 
+values('999',01-JAN-1901,01-JAN-1999,'IT_PROG',110);
+*/
+
+
+4. 
+select start_date, employee_id
+from job_history
+where start_date + 30 = '31-JAN-99';
+
+
+5. Equality and Inequality
+< 	> 	= 	!= 		
+bewteen 	
+like 	
+>= 	<= 	<> 		
+IS NULL		
+IS NOT NULL
+
+
+select last_name 
+from employees 
+where last_name < 'King';
+(K+i+n+g = 75+105+110+103 = 393)
+
+
+select last_name 
+from employees
+where salary between 3400 and 4000;
+
+select last_name, salary 
+from employees
+where salary in (1000, 4000, 6000);
+
+select last_name, salary 
+from employees
+where salary in (1000, 4000, 6000);
+
+
+select first_name, last_name 
+from employees
+where last_name like 'King';
+
+select first_name, last_name 
+from employees
+where last_name like 'K_ng';
+
+
+select  *
+from countries 
+where country_name like 'I%a%';
+
+
+select job_id 
+from jobs
+where job_id like 'SA\_' escape '\';
+The ESCAPE identifier instructs the Oracle server to treat any character found
+after the backslash character as a regular nonspecial symbol with no wildcard
+meaning.
+
+Question:
+6. 
+select department_name from departments where department_name like '%ing';
+
+
+select first_name, last_name, commission_pct, hire_date
+from employees
+where first_name like 'J%'
+and commission_pct > 0.1;
+
+select first_name, last_name, commission_pct, hire_date
+from employees
+where first_name like 'B%'
+or commission_pct > 0.35;
+
+
+select last_name,salary,department_id,job_id,commission_pct
+from employees
+where last_name like '%a%' and salary > department_id * 100 and
+commission_pct is not null
+or
+job_id = 'MK_MAN';
+
+
+
+7. Sort the Rows Retrieved by a Query
+. ORDER BY
+select last_name, hire_date, salary
+from employees
+where job_id in ('SA_REP','MK_MAN')
+order by last_name;
+
+
+select last_name, salary, hire_date, hire_date-(salary/10) "Show"
+from employees
+where job_id in ('SA_REP','MK_MAN')
+order by "Show";
+
+//order by second column
+select last_name, hire_date, salary
+from employees
+where job_id in ('SA_REP','MK_MAN')
+order by 2;
+
+//null value to the top, then sorting - nulls last: null value to the last of table
+select last_name, salary, commission_pct
+from employees
+where job_id in ('SA_MAN','MK_MAN')
+order by commission_pct desc nulls first;
+
+select last_name from employees
+where salary in (1000,4000,6000);
+
+
+. Composite sorting
+select job_id, last_name, salary, hire_date
+from employees
+where job_id in ('SA_REP','MK_MAN')
+order by job_id desc, last_name, 3 desc;
+
+
+. Ambersand substitution
+DEFINE and VERIFY command
+
+select employee_id, last_name, phone_number
+from employees
+where last_name = &LASTNAME
+or employee_id = &EMPNO
+;
+-> enter value for last name: 'Smith'
+-> enter value for empno: 0
+
+
+. Double Ambersand substitution
+select first_name, last_name
+from employees
+where last_name like '%&SEARCH%'
+and first_name like '%&SEARCH%'
+;
+-> enter value for last name: K -> %K%
+-> enter value for first name: S -> %S%
+
+=> in case need to use same value appear in query several times
+select first_name, last_name
+from employees
+where last_name like '%&&SEARCH%'
+and first_name like '%&SEARCH%'
+;
+
+=> to undefine search value, use UNDEFINE command
+
+
+
+. substituting column name 
+select first_name, job_id, &&col
+from employees
+where job_id in ('MK_MAN', 'SA_MAN')
+order by &col
+;
+--> input: salary
+
+
+. undefine and verify 
+select last_name, &&COLNAME
+from employees
+where department_id=30
+order by &COLNAME
+;
+-> input: salary
+
+select last_name, &COLNAME
+from employees
+where department_id=20
+order by &COLNAME
+;
+
+undefine COLNAME
+select last_name, &&COLNAME
+from employees
+where department_id=30
+order by &COLNAME
+;
+-> input: salary
+
+. command DEFINE
+define emp_name=King
+define;
+
+select last_name, first_name
+from employees
+where last_name='&EMP_NAME'
+;
+
+
+. command VERIFY: The VERIFY command controls whether the substitution variable submitted is displayed onscreen so you can verify that the correct substitution has occurred.
+
+VERIFY has on/off mode to let user input value
+
+set verify off
+select last_name, first_name
+from employees
+where last_name='&EMP_NAME2'
+;
+-> input: King
+
+set verify on
+select last_name, first_name
+from employees
+where last_name='&EMP_NAME2'
+;
+-> input: King
+---------------------------------------------
+SQL> set verify off
+SQL> select last_name, first_name
+  2  from employees
+  3  where last_name='&EMP_NAME2'
+  4  ;
+Enter value for emp_name2: King
+
+LAST_NAME                 FIRST_NAME
+------------------------- --------------------
+King                      Janette
+King                      Steven
+
+
+SQL> set verify on
+SQL> select last_name, first_name
+  2  from employees
+  3  where last_name='&EMP_NAME2'
+  4  ;
+Enter value for emp_name2: King
+old   3: where last_name='&EMP_NAME2'
+new   3: where last_name='King'
+
+LAST_NAME                 FIRST_NAME
+------------------------- --------------------
+King                      Janette
+King                      Steven
+
+
+
+
+/*=========================== CHAP 4 =======================*/
+rem ============ single row function =============
+- returns only one value per execution
+- Three important components form the basis of defining a function
++ input parameters list
++ data type of its resultant value
++ detail of process
+
+lower('SQL') = sql
+upper('sql') = SQL
+initcap('sql') = Sql
+
+length('A short string') = 14
+
+concat('SQL is',' easy to learn.') = SQL is easy to learn.
+
+substr('http://www.domain.com',12,6) = domain
+
+instr('http://www.domain.com','.',1,2) = 18
+
+rpad('#PASSWORD#',11,'#') = #PASSWORD##
+lpad('#PASSWORD#',11,'#') = ##PASSWORD#
+trim('#' from '#PASSWORD#') = PASSWORD
+
+replace('#PASSWORD#','WORD','PORT') = #PASSPORT#
+
+round(42.39,1) = 42.4
+trunc(42.39,1) = 42.3
+mod(42,10) = 2
+
+months_between('01-FEB-2008','01-JAN-2008') = 1
+add_months('01-JAN-2008',1) = 01-FEB-2008
+
+last_day('01-FEB-2008') = 29-FEB-2008
+next_day('01-FEB-2008','Friday') = 08-FEB-2008
+
+sysdate = 17-DEC-2007
+round(sysdate,'month') = 01-JAN-2008
+trunc(sysdate,'month') = 01-DEC-2007
+
+-----------example--------
+---single row
+select region_id, region_name, length(region_name)
+from regions
+;
+
+---multiple rows
+select region_id, region_name, length(region_name), 
+	substr(region_name, length(region_name), 1)
+from regions
+where length(region_name)>4
+order by substr(region_name, length(region_name), 1)
+;
+
+----dual
+select lower(100) from dual;
+select lower(100+100) from dual;
+select lower('The SUM '||'100+100'||' = 200') from dual;
+select lower(SYSDATE) from dual;
+select lower(SYSDATE+2) from dual;
+select instr(3+0.14,'.') from dual; --> 2
+select replace(10000-3,'9','85') from dual;
+select replace('1#3#5#7#9#','#') from dual; --> 13579
+
+command: 
+ADD_MONTH, 
+MONTH_BETWEEN, 
+NEXT_DAY, 
+LAST_DAY, 
+ROUND(TO_DATE())
+
+
+
+/*=========================== CHAP 5 =======================*/
+rem === using conversion function and conditional expression ==== 
+
+The concept of nesting functions is defined and a category of general functions aimed at simplifying interactions with NULL values is introduced. These include the NVL, NVL2, NULLIF, and COALESCE functions.
+
+Query 1: select length(1234567890) from dual;
+Query 2: select length(SYSDATE) from dual;
+Query 3: select mod('11',2) from dual;
+Query 4: select mod('11.123',2) from dual;
+
+---need conversion
+Query 5: select mod('11.123.456',2) from dual;
+Query 6: select mod('$11',2) from dual;
+
+
+=== nested function
+Nested functions use the output from one function as the input to anotheranother. Functions always return exactly one result.
+
+F1( param1.1, F2( param2.1, param2.2, F3( param3.1)), param1.3)
+
+They are evaluated from the innermost to outermost levels.
+
+select length(to_char(to_date('28/10/09', 'DD/MM/RR'),'fmMonth'))from dual
+;
+--> output: 7
+
+select to_char(to_date('28/10/09', 'DD/MM/RR'),'fmMonth')from dual
+;
+--> output: October
+
+=== general function 
+General functions simplify working with columns that potentially contain null values. These functions accept input parameters of all data types. The services they offer are primarily relevant to null values.
+
+=== NVL function 
+The NVL function evaluates whether a column or expression of any data type is null or not. If the term is null, an alternative not null value is returned; otherwise, the initial term is returned.
+
+select nvl(1234) from dual;
+--> error
+select nvl(null,1234) from dual;
+--> 1234
+select nvl(1234,0) from dual;
+---> always the first number, if both not null: 1234
+
+
+---example
+select last_name, salary, commission_pct, (nvl(commission_pct,0) * salary + 1000) as "monthly commission"
+from employees
+where last_name like 'E%'
+;
+
+LAST_NAME                     SALARY COMMISSION_PCT monthly commission
+------------------------- ---------- -------------- ------------------
+Ernst                           6000                              1000
+Errazuriz                      12000             .3               4600
+Everett                         3900                              1000
+
+
+select last_name, salary, commission_pct, (commission_pct * salary + 1000) as "monthly commission"
+from employees
+where last_name like 'E%'
+;
+
+LAST_NAME                     SALARY COMMISSION_PCT monthly commission
+------------------------- ---------- -------------- ------------------
+Ernst                           6000
+Errazuriz                      12000             .3               4600
+Everett                         3900
+
+
+=== nvl2 function
+The NVL2 function provides an enhancement to NVL but serves a very similar
+purpose. It evaluates whether a column or expression of any data type is null or not. If the first term is not null, the second parameter is returned, else the third parameter is returned. Recall that the NVL function is different since it returns the original term if it is not null.
+
+NVL2(original, ifnotnull, ifnull)
+--> where original represents the term being tested. 
+. Ifnotnull is returned if original is not null
+. and ifnull is returned if original is null. 
+. The data types of the ifnotnull and ifnull parameters must be compatible, and they cannot be of type LONG.
+
+select nvl2(1234,1,'a string') from dual;
+--> error
+select nvl2(null,1234,5678) from dual;
+--> 5678
+select nvl2(substr('abc',2),'Not bc','No substring') from dual;
+--> Not bc
+
+
+---example
+select last_name, salary, commission_pct,
+nvl2(commission_pct, 'Commission Earner', 'Not a Commission Earner') 
+as employsee_type
+from employees
+where last_name like 'G%'
+;
+
+LAST_NAME                     SALARY COMMISSION_PCT EMPLOYSEE_TYPE
+------------------------- ---------- -------------- -----------------------
+Gates                           2900                Not a Commission Earner
+Gee                             2400                Not a Commission Earner
+Geoni                           2800                Not a Commission Earner
+Gietz                           8300                Not a Commission Earner
+Grant                           2600                Not a Commission Earner
+Grant                           7000            .15 Commission Earner
+Greenberg                      12000                Not a Commission Earner
+Greene                          9500            .15 Commission Earner
+
+
+=== nullif function
+The NULLIF function tests two terms for equality. If they are equal the function
+returns a null, else it returns the first of the two terms tested.
+
+select nullif(1234,1234) from dual;
+--> null
+select nullif(1234,123+1) from dual;
+--> 1234
+select nullif('24-JUL-2009','24-JUL-09') from dual;
+--> 24-JUL-2009
+
+
+=== coalesce function
+The COALESCE function returns the first nonnull value from its parameter list. If
+all its parameters are null, then null is returned.
+
+COALESCE(expr1,expr2) = NVL(expr1,expr2)
+COALESCE(expr1,expr2,expr3) = NVL(expr1,NVL(expr2,expr3))
+
+select coalesce(null, null, null, 'a string') from dual;
+--> a string
+select coalesce(substr('abc',4),'Not bc','No substring') from dual;
+--> not bc
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

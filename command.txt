@@ -1,3 +1,10 @@
+/*================= tips&trick ==============*/
+. increase width of line 
+set linesize 150; 
+
+. increase column width
+column colname format a24
+
 /*================= set up ==============*/
 1. set up scott account
 info about account 
@@ -530,7 +537,11 @@ select nvl(1234,0) from dual;
 
 
 ---example
-select last_name, salary, commission_pct, (nvl(commission_pct,0) * salary + 1000) as "monthly commission"
+select 
+	last_name, 
+	salary, 
+	commission_pct, 
+	(nvl(commission_pct,0) * salary + 1000) as "monthly commission"
 from employees
 where last_name like 'E%'
 ;
@@ -616,26 +627,151 @@ select coalesce(null, null, null, 'a string') from dual;
 select coalesce(substr('abc',4),'Not bc','No substring') from dual;
 --> not bc
 
+---example
+select 
+	coalesce(state_province, postal_code, city), 
+	postal_code, state_province, city
+from locations
+where country_id in ('UK', 'IT', 'JP')
+;
+
+COALESCE(STATE_PROVINCE,POSTAL POSTAL_CODE  STATE_PROVINCE            CITY
+------------------------------ ------------ ------------------------- ------------------------------
+00989                          00989                                  Roma
+10934                          10934                                  Venice
+Tokyo Prefecture               1689         Tokyo Prefecture          Tokyo
+6823                           6823                                   Hiroshima
+London                                                                London
+Oxford                         OX9 9ZB      Oxford                    Oxford
+Manchester                     09629850293  Manchester                Stretford
+
+
+select 
+	state_province, postal_code, city
+from locations
+where country_id in ('UK', 'IT', 'JP')
+;
+STATE_PROVINCE            POSTAL_CODE  CITY
+------------------------- ------------ ------------------------------
+                          00989        Roma
+                          10934        Venice
+Tokyo Prefecture          1689         Tokyo
+                          6823         Hiroshima
+                                       London
+Oxford                    OX9 9ZB      Oxford
+Manchester                09629850293  Stretford
+
+
+=== conditional function
+Conditional logic, also known as if-then-else logic, refers to choosing a path of
+execution based on data values meeting certain conditions.
+
+=== decode function 
+The DECODE function implements if-then-else conditional logic by testing its first two terms for equality and returns the third if they are equal and optionally returns another term if they are not.
+
+DECODE(expr1, comp1, iftrue1, [comp2, iftrue2...[ compN, iftrueN]], [iffalse]).
+
+select decode(1234,123,'123 is a match') from dual;
+--> null
+select decode(1234,123,'123 is a match','No match') from dual;
+--> No match
+select decode('search','comp1','true1', 'comp2','true2', 'search','true3', substr('2search',2,6),'true4', 'false') from dual;
+--> true3
+
+---example 
+select distinct 
+	country_id, 
+	decode(country_id, 'DR', 'Southern Hemisphere', 
+			'AU', 'Southern Hemisphere', 'Northern Hemisphere')
+	as hemisphere
+from locations
+order by hemisphere
+;	
+
+CO HEMISPHERE
+-- -------------------
+BR Northern Hemisphere
+CA Northern Hemisphere
+CH Northern Hemisphere
+CN Northern Hemisphere
+DE Northern Hemisphere
+IN Northern Hemisphere
+IT Northern Hemisphere
+JP Northern Hemisphere
+MX Northern Hemisphere
+NL Northern Hemisphere
+SG Northern Hemisphere
+UK Northern Hemisphere
+US Northern Hemisphere
+AU Southern Hemisphere
+
+
+=== CASE expression
+CASE search_expr
+	WHEN comparison_expr1 THEN iftrue1
+	[WHEN comparison_expr2 THEN iftrue2
+	…
+		WHEN comparison_exprN THEN iftrueN
+	ELSE iffalse]
+END
+
+select
+	case substr(1234,1,3)
+		when '134' then '1234 is a match'
+		when '1235' then '1235 is a match'
+		when concat('1','23') then concat('1','23')||' is a match'
+		else 'no match'
+	end
+from dual;
+
+
+select 
+	last_name,
+	hire_date,
+	trunc(months_between(sysdate, hire_date)/12) as year,
+	trunc(months_between(sysdate, hire_date)/60) as "year divide by 5",
+case trunc(months_between(sysdate, hire_date)/60)
+	when 0 then 'Intern'
+	when 2 then 'Junior'
+	when 4 then 'Intermediate'
+	when 5 then 'Senior'
+	else 'Furniture'
+END as loyalty
+from employees
+where
+	department_id in (10, 60)
+;
+
+LAST_NAME                 HIRE_DATE       YEAR year divide by 5 LOYALTY
+------------------------- --------- ---------- ---------------- ------------
+Whalen                    17-SEP-87         32                6 Furniture
+Hunold                    03-JAN-90         30                6 Furniture
+Ernst                     21-MAY-91         28                5 Senior
+Austin                    25-JUN-97         22                4 Intermediate
+Pataballa                 05-FEB-98         21                4 Intermediate
+Lorentz                   07-FEB-99         20                4 Intermediate
+
+
+select 
+	last_name, 
+	hire_date,
+	trunc(months_between(sysdate,hire_date)/12) years,
+	trunc(months_between(sysdate,hire_date)/60) "Years divided by 5",
+case
+	when trunc(months_between(sysdate,hire_date)/60) < 1 then 'Intern'
+	when trunc(months_between(sysdate,hire_date)/60) < 2 then 'Junior'
+	when trunc(months_between(sysdate,hire_date)/60) < 3 then 'Intermediate'
+	when trunc(months_between(sysdate,hire_date)/60) < 4 then 'Senior'
+	else 'Furniture'
+end Loyalty
+from employees
+where department_id in (60,10)
+;
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+/*=========================== CHAP 6 ==========================*/
+rem === reporting aggregated data using the group function ==== 
 
 
 

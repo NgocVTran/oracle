@@ -773,6 +773,1786 @@ where department_id in (60,10)
 /*=========================== CHAP 6 ==========================*/
 rem === reporting aggregated data using the group function ==== 
 
+Group functions are examined in two stages. First, their purpose and syntax is discussed. Second, a detailed analysis of the AVG, SUM, MIN, MAX, and COUNT functions is conducted.
+
+F(g1, g2, g3,…, gn) = result1, result2, result2,…, resultn;
+
+SELECT group_function(column or expression),…
+FROM table [WHERE …] [ORDER BY…]
+
+select 
+	count(*), 
+	department_id
+from employees
+group by department_id
+order by department_id
+;
+
+  COUNT(*) DEPARTMENT_ID
+---------- -------------
+         1            10
+         2            20
+         6            30
+         1            40
+        45            50
+         5            60
+         1            70
+        34            80
+         2            90
+         6           100
+         2           110
+         1           190
+         1
+
+=== Type and syntax of group function
+The COUNT function counts the number of rows in a group. Its syntax is as follows:
+
+COUNT({*|[DISTINCT|ALL] expr});
+
+This syntax may be deconstructed into the following forms:
+1. COUNT(*)
+2. COUNT(DISTINCT expr)
+3. COUNT(ALL expr)
+4. COUNT(expr)
+
+
+NUMBER, DATE, CHAR, or VARCHAR2. If expr is a null, it is ignored unless it is
+managed using a general function like NVL, NVL2, or COALESCE.
+
+The AVG function calculates the average value of a numeric column or
+expression in a group. Its syntax is as follows:
+AVG([DISTINCT|ALL] expr) ;
+This syntax may be deconstructed into the following forms:
+1. AVG(DISTINCT expr)
+2. AVG(ALL expr)
+3. AVG(expr)
+FIGURE 6-1
+Group functions
+operating on 12
+groups
+
+
+When AVG(DISTINCT expr) is invoked, the distinct values of expr are summed
+and divided by the number of unique occurrences of expr.
+
+The SUM function returns the aggregated total of the nonnull numeric
+expression values in a group. It has the following syntax:
+
+SUM([DISTINCT|ALL] expr) ;
+
+This syntax may be deconstructed into the following forms:
+1. SUM(DISTINCT expr)
+2. SUM(ALL expr)
+3. SUM(expr)
+
+SUM(DISTINCT expr) provides a total by adding all the unique values returned
+after expr is evaluated for each row in the group. SUM(expr) and SUM(ALL expr)
+provide a total by adding expr for each row in the group. Null values are ignored. The data type of expr is NUMBER.
+
+
+The MAX and MIN functions return the maximum (largest) and minimum (smallest) expr value in a group. Their syntax is as follows:
+
+MAX([DISTINCT|ALL] expr); MIN([DISTINCT|ALL] expr)
+
+This syntax may be deconstructed into the following forms:
+1. MAX(DISTINCT expr); MIN(DISTINCT expr)
+2. MAX(ALL expr); MIN(ALL expr)
+3. MAX(expr); MIN(expr);
+
+
+The STDDEV and VARIANCE functions are two of many statistical group
+functions Oracle provides. VARIANCE has the following syntax:
+
+VARIANCE([DISTINCT|ALL] expr);
+
+This syntax may be deconstructed into the following forms:
+1. VARIANCE(DISTINCT expr)
+2. VARIANCE(ALL expr)
+3. VARIANCE(expr)
+
+
+STDDEV has the following syntax:
+
+STDDEV([DISTINCT|ALL] expr);
+
+This syntax may be deconstructed into the following forms:
+1. STDDEV(DISTINCT expr)
+2. STDDEV(ALL expr)
+3. STDDEV(expr)
+
+=== examples 
+select count(*) from employees;
+--> 107 
+select count(commission_pct) from employees;
+--> 35
+select count(distinct commission_pct) from employees;
+--> 7
+select count(hire_date), count(manager_id) from employees;
+-->
+COUNT(HIRE_DATE) COUNT(MANAGER_ID)
+---------------- -----------------
+             107               106
+			 
+select 
+	count(hire_date), 
+	count(manager_id), 
+	count(commission_pct),
+	count(distinct commission_pct) 	
+from employees;
+
+
+select sum(2) from employees
+--> 2
+select sum(salary) from employees;
+--> 
+SUM(SALARY)
+-----------
+     691400
+
+select sum(distinct salary) from employees;
+-->
+SUM(DISTINCTSALARY)
+-------------------
+             397900
+
+select sum(commission_pct) from employees;
+-->
+SUM(COMMISSION_PCT)
+-------------------
+                7.8
+
+select min(commission_pct), max(commission_pct) from employees;
+select min(start_date),max(end_date) from job_history;
+select min(job_id),max(job_id) from employees;
+
+select min(commission_pct), max(commission_pct) from employees;
+select min(start_date),max(end_date) from job_history;
+select min(job_id),max(job_id) from employees;
+
+select 
+	last_name, 
+	first_name, 
+	job_id,
+	(sysdate-hire_date)/365.25 as "Years Worked"
+from employees
+where job_id = 'IT_PROG'
+;
+
+
+select 
+	avg((sysdate-hire_date)/365.25)
+		as "Avg worked years by IT staff"
+from employees
+where job_id = 'IT_PROG'
+;
+Avg worked years by IT staff
+----------------------------
+                  24.8065416
+
+select 
+	min(hire_date),
+	min(salary),
+	max(hire_date),
+	max(salary)
+from employees
+where job_id = 'SA_REP'
+;
+MIN(HIRE_ MIN(SALARY) MAX(HIRE_ MAX(SALARY)
+--------- ----------- --------- -----------
+30-JAN-96        6100 21-APR-00       11500
+
+
+select 
+	last_name, 
+	hire_date, 
+	salary
+from employees
+where job_id = 'SA_REP'
+and salary in (6100, 11500)
+or hire_date in ('30-Jan-1996', '21-Apr-2000')
+;
+LAST_NAME                 HIRE_DATE     SALARY
+------------------------- --------- ----------
+King                      30-JAN-96      10000
+Banda                     21-APR-00       6200
+Ozer                      11-MAR-97      11500
+Kumar                     21-APR-00       6100
+
+=== nested group function
+Group functions may only be nested two levels deep. Three formats using group functions are shown here:
+
+G1(group_item) = result
+G1(G2(group_item ) = result
+G1(G2(G3(group_item))) is NOT allowed.
+
+select 
+	sum(commission_pct), 
+	nvl(department_id, 0)
+from employees
+where nvl(department_id, 0) in (40, 80, 0)
+group by department_id
+;
+
+SUM(COMMISSION_PCT) NVL(DEPARTMENT_ID,0)
+------------------- --------------------
+                .15                    0
+                                      40
+               7.65                   80
+			   
+--> explain by sql:
+SQL> select
+  2  sum(commission_pct)
+  3  from employees
+  4  where department_id = 40
+  5  ;
+
+SUM(COMMISSION_PCT)
+-------------------
+
+
+SQL> select
+  2  sum(commission_pct)
+  3  from employees
+  4  where department_id = 80
+  5  ;
+
+SUM(COMMISSION_PCT)
+-------------------
+               7.65
+			   
+--> how to group this 2 results?
+SQL> select
+  2  sum(commission_pct),
+  3  department_id
+  4  from employees
+  5  where department_id in (80, 40)
+  6  group by department_id
+  7  ;
+
+SUM(COMMISSION_PCT) DEPARTMENT_ID
+------------------- -------------
+                               40
+               7.65            80
+
+
+=== group data using GROUP BY Clause
+Group functions may be applied to these subsets or clusters of rows.
+
+The SELECT statement is enhanced by the addition of the GROUP BY clause. This clause facilitates the creation of groups. It appears after the WHERE clause but before the ORDER BY clause, as follows:
+
+SELECT column|expression|group_function(column|expression [alias]),…}
+FROM table
+[WHERE condition(s)]
+[GROUP BY {col(s)|expr}]
+[ORDER BY {col(s)|expr|numeric_pos} [ASC|DESC] [NULLS FIRST|LAST]];
+
+select max(salary), count(*)
+from employees
+group by department_id
+order by department_id
+;
+MAX(SALARY)   COUNT(*)
+----------- ----------
+       4400          1
+      13000          2
+      11000          6
+       6500          1
+       8200         45
+       9000          5
+      10000          1
+      14000         34
+      17000          2
+      12000          6
+      12000          2
+      24000          1
+       7000          1
+
+select 
+	max(salary),
+	department_id
+from employees
+where department_id = 20
+;
+    SALARY DEPARTMENT_ID
+---------- -------------
+     13000            20
+      6000            20
+
+
+select 
+	max(salary),
+	department_id
+from employees
+where department_id = 20
+group by department_id
+;
+
+MAX(SALARY) DEPARTMENT_ID
+----------- -------------
+      13000            20
+
+
+select 
+	max(salary), 
+	count(*),
+	department_id
+from employees
+group by department_id
+order by department_id
+;
+
+--->explain:
+The grouping attribute in this example is the DEPARTMENT_ID column. The dataset, on which the group functions in the SELECT list must operate, is divided into 12 groups, one for each department. For each group (department), the maximum salary value and the number of rows are returned.
+
+Any item in the SELECT list that is not a group function must be a grouping attribute of the GROUP BY clause.
+
+select 
+	to_char(end_date, 'YYYY') as "Year",
+	count(*) as "Number of Employees"
+from job_history
+group by to_char(end_date, 'YYYY')
+order by count(*) desc
+;
+Year Number of Employees
+---- -------------------
+1999                   4
+1998                   3
+1993                   2
+1997                   1
+
+
+=== grouping by multiple columns
+
+select 
+	department_id, 
+	sum(commission_pct) 
+from employees
+where commission_pct is not null 
+group by department_id
+;
+
+DEPARTMENT_ID SUM(COMMISSION_PCT)
+------------- -------------------
+                              .15
+           80                7.65
+
+
+select 
+	department_id, 
+	job_id, 
+	sum(commission_pct) 
+from employees
+where commission_pct is not null 
+group by department_id, job_id
+;
+
+DEPARTMENT_ID JOB_ID     SUM(COMMISSION_PCT)
+------------- ---------- -------------------
+           80 SA_REP                    6.15
+           80 SA_MAN                     1.5
+              SA_REP                     .15
+
+
+=== include or exclude grouped rows using the HAVING Clause
+
+
+select 
+	department_id
+from job_history
+where department_id in (50,60,80,110)
+;
+
+DEPARTMENT_ID
+-------------
+           50
+           50
+           60
+           80
+           80
+          110
+          110
+
+7 rows selected.
+
+
+--> without WHERE clause:
+select	
+	department_id
+from job_history
+;
+
+DEPARTMENT_ID
+-------------
+          110
+           60
+          110
+           20
+           50
+           50
+           90
+           80
+           80
+           90
+
+10 rows selected.
+
+Suppose you want to know how many employees were previously employed in each of these departments. There are seven rows that can be manually grouped and counted. However, if there are a large number of rows, an aggregate function like COUNT may be used, as shown in the following query:
+
+select 
+	department_id, 
+	count(*)
+from job_history
+where department_id in (50,60,80,110)
+group by department_id
+;
+
+DEPARTMENT_ID   COUNT(*)
+------------- ----------
+           50          2
+           60          1
+           80          2
+          110          2
+
+Suppose you wanted to refine this list to include only those departments with more than one employee. The HAVING clause limits or restricts the group-level rows as required.
+
+This query must perform the following steps:
+1. Consider the entire row-level dataset.
+2. Limit the dataset based on any WHERE clause conditions.
+3. Segment the data into one or more groups using the grouping attributes specified in the GROUP BY clause.
+4. Apply any aggregate functions to create a new group-level dataset. Each row may be regarded as an aggregation of its source row-level data based on the groups created.
+5. Limit or restrict the group-level data with a HAVING clause condition. Only group-level results matching these conditions are returned.
+
+
+=== the HAVING Clause
+SELECT 
+	column|expression|group_function(column|expression [alias]),…}
+FROM table
+[WHERE condition(s)]
+[GROUP BY {col(s)|expr}]
+[HAVING group_condition(s)]
+[ORDER BY {col(s)|expr|numeric_pos} [ASC|DESC] [NULLS FIRST|LAST]];
+
+An important difference between the HAVING clause and the other SELECT statement clauses is that it may only be specified if a GROUP BY clause is present.
+
+select 
+	department_id, 
+	count(*)
+from job_history
+where department_id in (50,60,80,110)
+group by department_id
+having count(*)>1
+;
+
+DEPARTMENT_ID   COUNT(*)
+------------- ----------
+           50          2
+           80          2
+          110          2
+
+
+/*=========================== CHAP 7 ==========================*/
+rem === displaying data from multiple tables ==== 
+■ Types of joins
+■ Joining tables using SQL:1999 syntax
+■ Qualifying ambiguous column names
+■ The NATURAL JOIN clause
+■ The natural JOIN USING clause
+■ The natural JOIN ON clause
+■ N-way joins and additional join conditions
+■ Nonequijoins
+
+
+ Name                                      Null?    Type
+ ----------------------------------------- -------- ----------------------------
+ COUNTRY_ID                                NOT NULL CHAR(2)
+ COUNTRY_NAME                                       VARCHAR2(40)
+ REGION_ID                                          NUMBER
+
+
+ Name                                      Null?    Type
+ ----------------------------------------- -------- ----------------------------
+ REGION_ID                                 NOT NULL NUMBER
+ REGION_NAME                                        VARCHAR2(25)
+
+
+=== NATURE JOIN, USING, JOIN
+The NATURAL JOIN keywords instruct Oracle to identify columns with identical names between the source and target tables. Thereafter, a join is implicitly
+performed between them.
+
+1.
+select 
+	* 
+from countries 
+where country_id='CA';
+
+CO COUNTRY_NAME                              REGION_ID
+-- ---------------------------------------- ----------
+CA Canada                                            2
+
+2.
+select 
+	region_name 
+from regions 
+where region_id='2';
+
+REGION_NAME
+-------------------------
+Americas
+
+Info:
+
+select * from regions;
+ REGION_ID REGION_NAME
+---------- -------------------------
+         2 Americas
+         3 Asia
+         4 Middle East and Africa
+         1 Europe
+
+select * from countries;
+CO COUNTRY_NAME                              REGION_ID
+-- ---------------------------------------- ----------
+AR Argentina                                         2
+AU Australia                                         3
+BE Belgium                                           1
+BR Brazil                                            2
+CA Canada                                            2
+CH Switzerland                                       1
+CN China                                             3
+DE Germany                                           1
+DK Denmark                                           1
+EG Egypt                                             4
+FR France                                            1
+HK HongKong                                          3
+IL Israel                                            4
+IN India                                             3
+IT Italy                                             1
+JP Japan                                             3
+KW Kuwait                                            4
+MX Mexico                                            2
+NG Nigeria                                           4
+NL Netherlands                                       1
+SG Singapore                                         3
+UK United Kingdom                                    1
+US United States of America                          2
+ZM Zambia                                            4
+ZW Zimbabwe                                          4
+
+25 rows selected.
+
+
+
+
+
+
+3.
+select
+	*
+from regions
+natural join countries
+;
+
+ REGION_ID REGION_NAME               CO COUNTRY_NAME
+---------- ------------------------- -- ----------------------------------------
+         1 Europe                    FR France
+         1 Europe                    UK United Kingdom
+         1 Europe                    DK Denmark
+         1 Europe                    BE Belgium
+         1 Europe                    NL Netherlands
+         1 Europe                    CH Switzerland
+         1 Europe                    IT Italy
+         1 Europe                    DE Germany
+         2 Americas                  AR Argentina
+         2 Americas                  BR Brazil
+         2 Americas                  CA Canada
+
+ REGION_ID REGION_NAME               CO COUNTRY_NAME
+---------- ------------------------- -- ----------------------------------------
+         2 Americas                  US United States of America
+         2 Americas                  MX Mexico
+         3 Asia                      IN India
+         3 Asia                      CN China
+         3 Asia                      JP Japan
+         3 Asia                      SG Singapore
+         3 Asia                      AU Australia
+         3 Asia                      HK HongKong
+         4 Middle East and Africa    ZM Zambia
+         4 Middle East and Africa    NG Nigeria
+         4 Middle East and Africa    KW Kuwait
+
+ REGION_ID REGION_NAME               CO COUNTRY_NAME
+---------- ------------------------- -- ----------------------------------------
+         4 Middle East and Africa    ZW Zimbabwe
+         4 Middle East and Africa    EG Egypt
+         4 Middle East and Africa    IL Israel
+
+25 rows selected.
+
+4.
+select
+	region_name
+from regions
+natural join countries
+where country_name = 'Canada'
+;
+
+REGION_NAME
+-------------------------
+Americas
+
+5.
+select
+	*
+from countries
+natural join regions
+;
+ REGION_ID CO COUNTRY_NAME                             REGION_NAME
+---------- -- ---------------------------------------- -------------------------
+         1 FR France                                   Europe
+         1 UK United Kingdom                           Europe
+         1 DK Denmark                                  Europe
+         1 BE Belgium                                  Europe
+         1 NL Netherlands                              Europe
+         1 CH Switzerland                              Europe
+         1 IT Italy                                    Europe
+         1 DE Germany                                  Europe
+         2 AR Argentina                                Americas
+         2 BR Brazil                                   Americas
+         2 CA Canada                                   Americas
+
+ REGION_ID CO COUNTRY_NAME                             REGION_NAME
+---------- -- ---------------------------------------- -------------------------
+         2 US United States of America                 Americas
+         2 MX Mexico                                   Americas
+         3 IN India                                    Asia
+         3 CN China                                    Asia
+         3 JP Japan                                    Asia
+         3 SG Singapore                                Asia
+         3 AU Australia                                Asia
+         3 HK HongKong                                 Asia
+         4 ZM Zambia                                   Middle East and Africa
+         4 NG Nigeria                                  Middle East and Africa
+         4 KW Kuwait                                   Middle East and Africa
+
+ REGION_ID CO COUNTRY_NAME                             REGION_NAME
+---------- -- ---------------------------------------- -------------------------
+         4 ZW Zimbabwe                                 Middle East and Africa
+         4 EG Egypt                                    Middle East and Africa
+         4 IL Israel                                   Middle East and Africa
+
+25 rows selected.
+
+--> similar columns will be displayed first. Then goes source table, then target table comes later.
+
+
+6.
+select
+	country_name
+from countries
+natural join regions
+where region_name = 'Americas'
+;
+COUNTRY_NAME
+----------------------------------------
+Argentina
+Brazil
+Canada
+United States of America
+Mexico
+
+
+7.
+select
+	*
+from regions
+join countries
+using (region_id)
+;
+ REGION_ID REGION_NAME               CO COUNTRY_NAME
+---------- ------------------------- -- ----------------------------------------
+         1 Europe                    FR France
+         1 Europe                    UK United Kingdom
+         1 Europe                    DK Denmark
+         1 Europe                    BE Belgium
+         1 Europe                    NL Netherlands
+         1 Europe                    CH Switzerland
+         1 Europe                    IT Italy
+         1 Europe                    DE Germany
+         2 Americas                  AR Argentina
+         2 Americas                  BR Brazil
+         2 Americas                  CA Canada
+
+ REGION_ID REGION_NAME               CO COUNTRY_NAME
+---------- ------------------------- -- ----------------------------------------
+         2 Americas                  US United States of America
+         2 Americas                  MX Mexico
+         3 Asia                      IN India
+         3 Asia                      CN China
+         3 Asia                      JP Japan
+         3 Asia                      SG Singapore
+         3 Asia                      AU Australia
+         3 Asia                      HK HongKong
+         4 Middle East and Africa    ZM Zambia
+         4 Middle East and Africa    NG Nigeria
+         4 Middle East and Africa    KW Kuwait
+
+ REGION_ID REGION_NAME               CO COUNTRY_NAME
+---------- ------------------------- -- ----------------------------------------
+         4 Middle East and Africa    ZW Zimbabwe
+         4 Middle East and Africa    EG Egypt
+         4 Middle East and Africa    IL Israel
+
+25 rows selected.
+
+=== JOIN USING
+When there are identical column names in the source and target tables you want to exclude as join columns, the JOIN…USING format may be used.
+
+select
+	region_name
+from regions
+join countries
+using (region_id)
+where country_name = 'Canada'
+;
+REGION_NAME
+-------------------------
+Americas
+
+
+=== JOIN…ON format of the natural join, 
+which allows join columns to be explicitly stated. This format does not depend on the columns in the source and target tables having identical names. 
+
+This form is more general and is the most widely used natural join format.
+
+select
+	country_name
+from countries
+join regions
+on (countries.region_id = regions.region_id)
+where region_name = 'Americas'
+;
+COUNTRY_NAME
+----------------------------------------
+Argentina
+Brazil
+Canada
+United States of America
+Mexico
+
+
+=== OUTER JOINS
+Not all tables share a perfect relationship, where every record in the source table can be matched to at least one row in the target table. 
+
+It is occasionally required that rows with nonmatching join column values also be retrieved by a query. This may seem to defeat the purpose of joins but has some practical benefits.
+
+
+desc employees
+ Name                                      Null?    Type
+ ----------------------------------------- -------- ----------------------------
+ EMPLOYEE_ID                               NOT NULL NUMBER(6)
+ FIRST_NAME                                         VARCHAR2(20)
+ LAST_NAME                                 NOT NULL VARCHAR2(25)
+ EMAIL                                     NOT NULL VARCHAR2(25)
+ PHONE_NUMBER                                       VARCHAR2(20)
+ HIRE_DATE                                 NOT NULL DATE
+ JOB_ID                                    NOT NULL VARCHAR2(10)
+ SALARY                                             NUMBER(8,2)
+ COMMISSION_PCT                                     NUMBER(2,2)
+ MANAGER_ID                                         NUMBER(6)
+ DEPARTMENT_ID                                      NUMBER(4)
+
+
+desc departments
+ Name                                      Null?    Type
+ ----------------------------------------- -------- ----------------------------
+ DEPARTMENT_ID                             NOT NULL NUMBER(4)
+ DEPARTMENT_NAME                           NOT NULL VARCHAR2(30)
+ MANAGER_ID                                         NUMBER(6)
+ LOCATION_ID                                        NUMBER(4)
+
+
+Suppose the EMPLOYEES and DEPARTMENTS tables are joined with common DEPARTMENT_ID values. EMPLOYEES records with null DEPARTMENT_ID values are excluded along with values absent from the DEPARTMENTS table. An outer join fetches these rows.
+
+
+
+=== CROSS JOINS
+A cross join or Cartesian product derives its names from mathematics, where it is also referred to as a cross product between two sets or matrices. This join creates one row of output for every combination of source and target table rows.
+
+example:
+select count(*) from countries;
+  COUNT(*)
+----------
+        25
+
+select count(*) from regions;
+  COUNT(*)
+----------
+         4
+
+select count(*) from regions cross join countries;
+  COUNT(*)
+----------
+       100
+
+
+select	
+	*
+from regions
+cross join countries
+where country_id = 'CA'
+;
+ REGION_ID REGION_NAME               CO COUNTRY_NAME     REGION_ID
+---------- ------------------------- -- --------------- ----------
+         2 Americas                  CA Canada                   2
+         3 Asia                      CA Canada                   2
+         4 Middle East and Africa    CA Canada                   2
+         1 Europe                    CA Canada                   2
+
+select	
+	*
+from countries
+where country_id = 'CA'
+;
+--> 100 rows
+
+=== SYNTAX
+1. NATURE JOIN
+Query 1 performs a natural join by specifying the join as a condition in the WHERE clause.
+
+select 
+	regions.region_name, 
+	countries.country_name
+from regions, countries
+where regions.region_id = countries.region_id
+;
+
+REGION_NAME               COUNTRY_NAME
+------------------------- ----------------------------------------
+Europe                    France
+Europe                    United Kingdom
+Europe                    Denmark
+Europe                    Belgium
+Europe                    Netherlands
+Europe                    Switzerland
+Europe                    Italy
+Europe                    Germany
+Americas                  Argentina
+Americas                  Brazil
+Americas                  Canada
+------------------------- ----------------------------------------
+Americas                  United States of America
+Americas                  Mexico
+Asia                      India
+Asia                      China
+Asia                      Japan
+Asia                      Singapore
+Asia                      Australia
+Asia                      HongKong
+Middle East and Africa    Zambia
+Middle East and Africa    Nigeria
+Middle East and Africa    Kuwait
+------------------------- ----------------------------------------
+Middle East and Africa    Zimbabwe
+Middle East and Africa    Egypt
+Middle East and Africa    Israel
+
+
+Query 2 specifies the join between the source and target tables as a WHERE condition. There is a plus symbol enclosed in brackets (+) to the left of the equal sign that indicates to Oracle that a right outer join must be performed.
+
+select 
+	last_name, 
+	department_name
+from employees, departments
+where employees.department_id (+) = departments.department_id
+;
+
+--ngoc's style
+This query returns employees’ LAST_NAME and their matching DEPARTMENT_NAME values. 
+
+In addition, the outer join retrieves DEPARTMENT_NAME from the rows with DEPARTMENT_ID values not currently assigned to any employee records.
+
+select
+	e.department_id,
+	d.department_id,
+	e.last_name, 
+	d.department_name
+from employees e, departments d
+where e.department_id (+) = d.department_id
+;
+
+DEPARTMENT_ID DEPARTMENT_ID LAST_NAME                 DEPARTMENT_NAME
+------------- ------------- ------------------------- ------------------------------
+           10            10 Whalen                    Administration
+           20            20 Fay                       Marketing
+           20            20 Hartstein                 Marketing
+           30            30 Tobias                    Purchasing
+           30            30 Colmenares                Purchasing
+           30            30 Baida                     Purchasing
+           30            30 Raphaely                  Purchasing
+           30            30 Khoo                      Purchasing
+           30            30 Himuro                    Purchasing
+           40            40 Mavris                    Human Resources
+           50            50 Feeney                    Shipping
+------------- ------------- ------------------------- ------------------------------
+           50            50 Fleaur                    Shipping
+           50            50 Fripp                     Shipping
+           50            50 Gates                     Shipping
+           50            50 Gee                       Shipping
+           50            50 Geoni                     Shipping
+           50            50 Grant                     Shipping
+           50            50 Jones                     Shipping
+           50            50 Kaufling                  Shipping
+           50            50 Ladwig                    Shipping
+           50            50 Everett                   Shipping
+           50            50 Dilly                     Shipping
+DEPARTMENT_ID DEPARTMENT_ID LAST_NAME                 DEPARTMENT_NAME
+------------- ------------- ------------------------- ------------------------------
+           50            50 Dellinger                 Shipping
+           50            50 Davies                    Shipping
+           50            50 Chung                     Shipping
+           50            50 Cabrio                    Shipping
+           50            50 Bull                      Shipping
+           50            50 Bissot                    Shipping
+           50            50 Bell                      Shipping
+           50            50 Atkinson                  Shipping
+           50            50 Landry                    Shipping
+           50            50 Weiss                     Shipping
+           50            50 Walsh                     Shipping
+------------- ------------- ------------------------- ------------------------------
+           50            50 Vollman                   Shipping
+           50            50 Vargas                    Shipping
+           50            50 Taylor                    Shipping
+           50            50 Mallin                    Shipping
+           50            50 Markle                    Shipping
+           50            50 Marlow                    Shipping
+           50            50 Matos                     Shipping
+           50            50 McCain                    Shipping
+           50            50 Mikkilineni               Shipping
+           50            50 Mourgos                   Shipping
+           50            50 Nayer                     Shipping
+
+DEPARTMENT_ID DEPARTMENT_ID LAST_NAME                 DEPARTMENT_NAME
+------------- ------------- ------------------------- ------------------------------
+           50            50 OConnell                  Shipping
+           50            50 Olson                     Shipping
+           50            50 Patel                     Shipping
+           50            50 Perkins                   Shipping
+           50            50 Philtanker                Shipping
+           50            50 Rajs                      Shipping
+           50            50 Rogers                    Shipping
+           50            50 Sarchand                  Shipping
+           50            50 Seo                       Shipping
+           50            50 Stiles                    Shipping
+           50            50 Sullivan                  Shipping
+------------- ------------- ------------------------- ------------------------------
+           60            60 Austin                    IT
+           60            60 Pataballa                 IT
+           60            60 Ernst                     IT
+           60            60 Lorentz                   IT
+           60            60 Hunold                    IT
+           70            70 Baer                      Public Relations
+           80            80 Abel                      Sales
+           80            80 Ande                      Sales
+           80            80 Banda                     Sales
+           80            80 Bates                     Sales
+           80            80 Bernstein                 Sales
+
+DEPARTMENT_ID DEPARTMENT_ID LAST_NAME                 DEPARTMENT_NAME
+------------- ------------- ------------------------- ------------------------------
+           80            80 Bloom                     Sales
+           80            80 Cambrault                 Sales
+           80            80 Cambrault                 Sales
+           80            80 Doran                     Sales
+           80            80 Errazuriz                 Sales
+           80            80 Fox                       Sales
+           80            80 Greene                    Sales
+           80            80 Hall                      Sales
+           80            80 Hutton                    Sales
+           80            80 Johnson                   Sales
+           80            80 King                      Sales
+------------- ------------- ------------------------- ------------------------------
+           80            80 Kumar                     Sales
+           80            80 Lee                       Sales
+           80            80 Livingston                Sales
+           80            80 Marvins                   Sales
+           80            80 McEwen                    Sales
+           80            80 Olsen                     Sales
+           80            80 Ozer                      Sales
+           80            80 Partners                  Sales
+           80            80 Russell                   Sales
+           80            80 Sewall                    Sales
+           80            80 Smith                     Sales
+
+DEPARTMENT_ID DEPARTMENT_ID LAST_NAME                 DEPARTMENT_NAME
+------------- ------------- ------------------------- ------------------------------
+           80            80 Smith                     Sales
+           80            80 Sully                     Sales
+           80            80 Taylor                    Sales
+           80            80 Tucker                    Sales
+           80            80 Tuvault                   Sales
+           80            80 Vishney                   Sales
+           80            80 Zlotkey                   Sales
+           90            90 De Haan                   Executive
+           90            90 Kochhar                   Executive
+          100           100 Popp                      Finance
+          100           100 Faviet                    Finance
+------------- ------------- ------------------------- ------------------------------
+          100           100 Chen                      Finance
+          100           100 Greenberg                 Finance
+          100           100 Urman                     Finance
+          100           100 Sciarra                   Finance
+          110           110 Gietz                     Accounting
+          110           110 Higgins                   Accounting
+                        120                           Treasury
+                        130                           Corporate Tax
+                        140                           Control And Credit
+                        150                           Shareholder Services
+                        160                           Benefits
+
+DEPARTMENT_ID DEPARTMENT_ID LAST_NAME                 DEPARTMENT_NAME
+------------- ------------- ------------------------- ------------------------------
+                        170                           Manufacturing
+                        180                           Construction
+          190           190 King                      Contracting
+                        200                           Operations
+                        210                           IT Support
+                        220                           NOC
+                        230                           IT Helpdesk
+                        240                           Government Sales
+                        250                           Retail Sales
+                        260                           Recruiting
+                        270                           Payroll
+
+121 rows selected.
+
+
+Query 3 performs a Cartesian or cross join by excluding the join condition.
+select * from regions,countries;
+--> 100 rows
+
+
+=== SQL 1999 SYNTAX
+The general form of the SELECT statement using ANSI SQL:1999 syntax is as follows:
+SELECT table1.column, table2.column
+FROM table1
+[NATURAL JOIN table2] |
+[JOIN table2 USING (column_name)] |
+[JOIN table2 ON (table1.column_name = table2.column_name)] |
+[LEFT | RIGHT | FULL OUTER JOIN table2
+ON (table1.column_name = table2.column_name)] |
+[CROSS JOIN table2];
+
+SELECT table1.column, table2.column
+FROM table1, table2
+[WHERE (table1.column_name = table2.column_name)] |
+[WHERE (table1.column_name(+)= table2.column_name)] |
+[WHERE (table1.column_name)= table2.column_name) (+)] ;
+
+
+If no joins or fewer than N-1 joins are specified in the WHERE clause conditions, where N refers to the number of tables in the query, then a Cartesian or cross join is performed. 
+
+If an adequate number of join conditions is specified, then the first optional conditional clause specifies a natural join, while the second two optional clauses specify the syntax for right and left outer joins.
+
+
+
+=== Qualifying Ambiguous Column Name
+select 
+	emp.employee_id,
+	department_id,
+	emp.manager_id,
+	departments.manager_id
+from 
+	employees emp
+join departments
+using (department_id)
+where department_id > 80
+;
+
+EMPLOYEE_ID DEPARTMENT_ID MANAGER_ID MANAGER_ID
+----------- ------------- ---------- ----------
+        102            90        100        100
+        101            90        100        100
+        113           100        108        108
+        112           100        108        108
+        111           100        108        108
+        110           100        108        108
+        109           100        108        108
+        108           100        101        108
+        206           110        205        205
+        205           110        101        205
+        100           190
+
+11 rows selected.
+
+
+=== LEFT OUTER JOIN 
+The format of the syntax for the LEFT OUTER JOIN clause is as follow:
+SELECT table1.column, table2.column
+FROM table1
+LEFT OUTER JOIN table2
+ON (table1.column = table2.column);
+
+A left outer join performs an inner join of table1 and table2 based on the condition specified after the ON keyword. Any rows from the table on the left of the JOIN keyword excluded for not fulfilling the join condition are also returned.
+
+example
+select 
+	e.employee_id, 
+	e.department_id EMP_DEPT_ID,
+	d.department_id DEPT_DEPT_ID, 
+	d.department_name
+from 
+	departments d 
+left outer join employees e
+on (d.DEPARTMENT_ID = e.DEPARTMENT_ID)
+where d.department_name like 'P%'
+;
+
+EMPLOYEE_ID EMP_DEPT_ID DEPT_DEPT_ID DEPARTMENT_NAME
+----------- ----------- ------------ ------------------------------
+                                 270 Payroll
+        114          30           30 Purchasing
+        115          30           30 Purchasing
+        116          30           30 Purchasing
+        117          30           30 Purchasing
+        118          30           30 Purchasing
+        119          30           30 Purchasing
+        204          70           70 Public Relations
+
+8 rows selected.
+
+
+select 
+	e.employee_id, 
+	e.department_id EMP_DEPT_ID,
+	d.department_id DEPT_DEPT_ID, 
+	d.department_name
+from 
+	departments d 
+join employees e
+on (d.DEPARTMENT_ID = e.DEPARTMENT_ID)
+where d.department_name like 'P%'
+;
+
+EMPLOYEE_ID EMP_DEPT_ID DEPT_DEPT_ID DEPARTMENT_NAME
+----------- ----------- ------------ ------------------------------
+        114          30           30 Purchasing
+        115          30           30 Purchasing
+        116          30           30 Purchasing
+        117          30           30 Purchasing
+        118          30           30 Purchasing
+        119          30           30 Purchasing
+        204          70           70 Public Relations
+
+7 rows selected.
+
+
+=== RIGHT OUTER JOIN
+The format of the syntax for the RIGHT OUTER JOIN clause is as follows:
+SELECT table1.column, table2.column
+FROM table1
+RIGHT OUTER JOIN table2
+ON (table1.column = table2.column);
+
+A right outer join performs an inner join of table1 and table2 based on the join condition specified after the ON keyword. Rows from the table to the right of the JOIN keyword, excluded by the join condition, are also returned.
+
+example
+
+select 
+	e.last_name, 
+	d.department_name 
+from departments d
+right outer join employees e
+on (e.department_id = d.department_id)
+where e.last_name like 'G%'
+;
+
+LAST_NAME                 DEPARTMENT_NAME
+------------------------- ------------------------------
+Grant                     Shipping
+Geoni                     Shipping
+Gee                       Shipping
+Gates                     Shipping
+Greene                    Sales
+Greenberg                 Finance
+Gietz                     Accounting
+Grant
+
+8 rows selected.
+
+
+select 
+	e.last_name, 
+	d.department_name 
+from departments d
+join employees e
+on (e.department_id = d.department_id)
+where e.last_name like 'G%'
+;
+
+LAST_NAME                 DEPARTMENT_NAME
+------------------------- ------------------------------
+Grant                     Shipping
+Gee                       Shipping
+Geoni                     Shipping
+Gates                     Shipping
+Greene                    Sales
+Greenberg                 Finance
+Gietz                     Accounting
+
+7 rows selected.
+
+
+select 
+	distinct jh.job_id as "job in Job History",
+	e.job_id as "job in Employees"
+from 
+	job_history jh
+right outer join
+	employees e
+on (jh.job_id = e.job_id)
+order by jh.job_id
+;
+
+job in Job job in Emp
+---------- ----------
+AC_ACCOUNT AC_ACCOUNT
+AC_MGR     AC_MGR
+AD_ASST    AD_ASST
+IT_PROG    IT_PROG
+MK_REP     MK_REP
+SA_MAN     SA_MAN
+SA_REP     SA_REP
+ST_CLERK   ST_CLERK
+           AD_PRES
+           AD_VP
+           FI_ACCOUNT
+---------- ----------
+           FI_MGR
+           HR_REP
+           MK_MAN
+           PR_REP
+           PU_CLERK
+           PU_MAN
+           SH_CLERK
+           ST_MAN
+
+19 rows selected.
+
+
+=== FULL OUTER JOIN
+The format of the syntax for the FULL OUTER JOIN clause is as follows:
+SELECT table1.column, table2.column
+FROM table1
+FULL OUTER JOIN table2
+ON (table1.column = table2.column);
+
+A full outer join returns the combined results of a left and right outer join. An inner join of table1 and table2 is performed before rows excluded by the join condition from both tables are merged into the results set.
+
+select
+	e.last_name,
+	d.department_name
+from 
+	departments d
+full outer join 
+	employees e
+on (e.department_id = d.department_id)
+where e.department_id is null
+;
+
+LAST_NAME                 DEPARTMENT_NAME
+------------------------- ------------------------------
+Grant
+                          NOC
+                          Manufacturing
+                          Government Sales
+                          IT Support
+                          Benefits
+                          Shareholder Services
+                          Retail Sales
+                          Control And Credit
+                          Recruiting
+                          Operations
+------------------------- ------------------------------
+                          Treasury
+                          Payroll
+                          Corporate Tax
+                          Construction
+                          IT Helpdesk
+
+16 rows selected.
+
+
+=== CREATING CARTESIAN PRODUCT BY USING CROSS JOIN
+The format of the syntax for the CROSS JOIN clause is as follows:
+SELECT table1.column, table2.column
+FROM table1
+CROSS JOIN table2;
+
+It is important to observe that no join condition is specified using the ON or USING keywords. A Cartesian product freely associates the rows from table1 with every row in table2.
+
+example
+select * from jobs cross join job_history;
+select * from jobs j cross join job_history jh
+where j.job_id='AD_PRES';
+
+JOB_ID     JOB_TITLE  MIN_SALARY MAX_SALARY EMPLOYEE_ID START_DAT END_DATE  JOB_ID     DEPARTMENT_ID
+---------- ---------- ---------- ---------- ----------- --------- --------- ---------- -------------
+AD_PRES    President       20000      40000         101 21-SEP-89 27-OCT-93 AC_ACCOUNT           110
+AD_PRES    President       20000      40000         102 13-JAN-93 24-JUL-98 IT_PROG               60
+AD_PRES    President       20000      40000         101 28-OCT-93 15-MAR-97 AC_MGR               110
+AD_PRES    President       20000      40000         201 17-FEB-96 19-DEC-99 MK_REP                20
+AD_PRES    President       20000      40000         114 24-MAR-98 31-DEC-99 ST_CLERK              50
+AD_PRES    President       20000      40000         122 01-JAN-99 31-DEC-99 ST_CLERK              50
+AD_PRES    President       20000      40000         200 17-SEP-87 17-JUN-93 AD_ASST               90
+AD_PRES    President       20000      40000         176 24-MAR-98 31-DEC-98 SA_REP                80
+AD_PRES    President       20000      40000         176 01-JAN-99 31-DEC-99 SA_MAN                80
+AD_PRES    President       20000      40000         200 01-JUL-94 31-DEC-98 AC_ACCOUNT            90
+
+10 rows selected.
+
+
+/*=========================== CHAP 8 ==========================*/
+rem === using subqueries to solve problems ==== 
+
+=== DEFINE SUBQUERY
+A subquery is a query that is nested inside a SELECT, INSERT, UPDATE, or DELETE statement or inside another subquery.
+
+The places in a query where a subquery may be used are as follows:
+■ In the SELECT list used for column projection
+■ In the FROM clause
+■ In the WHERE clause
+■ In the HAVING clause
+
+A subquery is often referred to as an inner query, and the statement within which it occurs is then called the outer query.
+
+A subquery can have any of the usual clauses for selection and projection. The
+following are required clauses:
+■ A SELECT list
+■ A FROM clause
+The following are optional clauses:
+■ WHERE
+■ GROUP BY
+■ HAVING
+The subquery (or subqueries) within a statement must be executed before the parent query that calls it, in order that the results of the subquery can be passed to the parent.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

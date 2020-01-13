@@ -1100,6 +1100,22 @@ from employees
 group by department_id
 order by department_id
 ;
+MAX(SALARY)   COUNT(*) DEPARTMENT_ID
+----------- ---------- -------------
+       4400          1            10
+      13000          2            20
+      11000          6            30
+       6500          1            40
+       8200         45            50
+       9000          5            60
+      10000          1            70
+      14000         34            80
+      17000          2            90
+      12000          6           100
+      12000          2           110
+----------- ---------- -------------
+      24000          1           190
+       7000          1
 
 --->explain:
 The grouping attribute in this example is the DEPARTMENT_ID column. The dataset, on which the group functions in the SELECT list must operate, is divided into 12 groups, one for each department. For each group (department), the maximum salary value and the number of rows are returned.
@@ -1171,8 +1187,6 @@ DEPARTMENT_ID
            80
           110
           110
-
-7 rows selected.
 
 
 --> without WHERE clause:
@@ -1248,6 +1262,23 @@ DEPARTMENT_ID   COUNT(*)
            50          2
            80          2
           110          2
+
+
+select 
+	max(salary), 
+	sum(salary),
+	count(*),
+	department_id
+from employees 
+where department_id > 100
+group by department_id
+having count(*) > 1
+order by department_id
+;
+
+MAX(SALARY) SUM(SALARY)   COUNT(*) DEPARTMENT_ID
+----------- ----------- ---------- -------------
+      12000       20300          2           110
 
 
 /*=========================== CHAP 7 ==========================*/
@@ -1339,9 +1370,6 @@ ZM Zambia                                            4
 ZW Zimbabwe                                          4
 
 25 rows selected.
-
-
-
 
 
 
@@ -2136,359 +2164,190 @@ The following are optional clauses:
 The subquery (or subqueries) within a statement must be executed before the parent query that calls it, in order that the results of the subquery can be passed to the parent.
 
 
+1. Use subquery result set for comparison purposes
+select last_name from employees
+where salary < (select avg(salary)from employees);
+
+select 
+	department_name 
+from departments 
+where department_id in
+	(select 
+		distinct(department_id) 
+	from employees)
+;
+
+--> equal to:
+select department_name from departments inner join employees
+on employees.department_id = departments.department_id
+group by department_name;
+
+DEPARTMENT_NAME
+------------------------------
+Contracting
+Executive
+Administration
+Marketing
+Purchasing
+Human Resources
+Shipping
+IT
+Public Relations
+Sales
+Finance
+Accounting
+
+12 rows selected.
+
+
+2. Star Transformation:
+An extension of the use of subqueries as an alternative to a join is to enable the star transformation often needed in data warehouse applications. Consider a large table recording sales. 
+
+Each sale is marked as being of a particular product to a particular buyer through a particular channel. These attributes are identified by codes, used as foreign keys to dimension tables with rows that describe each product, buyer, and channel. To identify all sales of books to buyers in Germany through Internet orders, one could run a query like this:
+
+select … from sales s, products p, buyers b, channels c
+where s.prod_code=p.prod_code
+and s.buy_code=b.buy_code
+and s.chan_code=c.chan_code
+and p.product=’Books’
+and b.country=’Germany’
+and c.channel=’Internet’;
+
+This query uses the WHERE clause to join the tables and then to filter the results. The following is an alternative query that will yield the same result:
+select … from sales
+where prod_code in (select prod_code from products where product=’Books’)
+and buy_code in (select buy_code from buyers where country=’Germany’)
+and chan_code in (select chan_code from channels where channel=’Internet);
+
+
+3. Generate a Table from Which to SELECT:
+Subqueries can also be used in the FROM clause, where they are sometimes referred to as inline views. Consider another problem based on the HR schema: 
+
+employees are assigned to a department, and departments have a location. Each location is in a country. How can you find the average salary of staff in a country, even though they work for different departments? Like this:
+
+select 
+	avg(salary),
+	country_id 
+from
+	(select 
+		salary,
+		department_id,
+		location_id,
+		country_id 
+	from
+		employees 
+	natural join departments 
+	natural join locations)
+group by country_id
+;
+
+AVG(SALARY) CO
+----------- --
+       5640 US
+       6000 CA
+       8500 UK
+
+The subquery constructs a table with every employee’s salary and the country in which his department is based. The parent query then addresses this table, averaging the SALARY and grouping by COUNTRY_ID.
+
+
+3. Generate Value for Projection
+The third place a subquery can go is in the SELECT list of a query. How can you identify the highest salary and the highest commission rate and thus what the maximum commission paid would be if the highest salaried employee also had the highest commission rate? Like this, with two subqueries:
+
+select
+	(select 
+		max(salary) 
+	from employees) *
+	(select 
+		max(commission_pct) 
+	from employees)
+	/ 100
+from dual
+;
+
+(SELECTMAX(SALARY)FROMEMPLOYEES)*(SELECTMAX(COMMISSION_PCT)FROMEMPLOYEES)/100
+-----------------------------------------------------------------------------
+                                                                           96
 
+In this usage, the SELECT list used to project columns is being populated with
+the results of the subqueries. A subquery used in this manner must be scalar, or the parent query will fail with an error.
 
 
+4. Generate Row to be passed to a DML Statement
 
+insert into sales_hist select * from sales where date > sysdate-1;
+update employees set salary = (select avg(salary) from employees);
+delete from departments
+where department_id not in (select department_id from employees);
 
+The first example uses a subquery to identify a set of rows in one table that will be inserted into another. 
 
+The second example uses a subquery to calculate the average salary of all employees and passes this value (a scalar quantity) to an update
+statement. 
 
+The third example uses a subquery to retrieve all DEPARTMENT_IDs that are in use and passes the list to a DELETE command, which will remove all departments that are not in use.
 
+Note that it is not legal to use a subquery in the VALUES clause of an insert
+statement; this is fine:
+insert into dates select sysdate from dual;
 
+But this is not:
+insert into dates (date_col) values (select sysdate fom dual);
 
 
 
+/*=========================== CHAP 9 ==========================*/
+rem === Using the Set Operators ==== 
 
+The set operators used in compound queries are as follows:
+■ UNION Returns the combined rows from two queries, sorting them and
+removing duplicates.
+■ UNION ALL Returns the combined rows from two queries without sorting
+or removing duplicates.
+■ INTERSECT Returns only the rows that occur in both queries’ result sets,
+sorting them and removing duplicates.
+■ MINUS Returns only the rows in the first result set that do not appear in
+the second result set, sorting them and removing duplicates.
 
+These commands are equivalent to the standard operators used in mathematics
+set theory, often depicted graphically as Venn diagrams.
 
+Consider groupings of living creatures, classified as follows:
+■ Creatures with two legs Humans, parrots, bats
+■ Creatures that can fly Parrots, bats, bees
+■ Creatures with fur Bears, bats
 
+Each classification is known as a set, and each member of the set is an element. The union of the three sets is humans, parrots, bats, bees, and bears. 
 
+This is all the elements in all the sets, without the duplications. The intersection of the sets is all elements that are common to all three sets, again removing the duplicates. In this simple example, the intersection has just one element: bats. 
 
+The intersection of the two-legged set and the flying set has two elements: parrots and bats. The minus of the sets is the elements of one set without the elements of another, so the two-legged creatures set, minus the flying creatures set, minus the furry creatures set, results in a single element: humans.
 
 
+/*=========================== CHAP 10 ==========================*/
+rem === Manipulate Data ==== 
 
+■ INSERT
+■ UPDATE
+■ DELETE
+■ TRUNCATE
+In addition, we will discuss, for completeness:
+■ MERGE
+These are the commands that manipulate data.
 
+The TRUNCATE command will empty the table, which is then repopulated from the
+subquery. The end users can be let loose on this table, and it should be impossible for them to misinterpret the contents—a simple natural join with no COALESCE functions, which might be all an end user would do, might be
+very misleading.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+truncate table department_salaries;
+insert into department_salaries (department,staff,salaries)
+select
+coalesce(department_name,'Unassigned'),
+count(employee_id),
+sum(coalesce(salary,0))
+from employees e full outer join departments d
+on e.department_id = d.department_id
+group by department_name
+order by department_name;
 
 
 

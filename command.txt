@@ -2326,6 +2326,10 @@ The intersection of the two-legged set and the flying set has two elements: parr
 /*=========================== CHAP 10 ==========================*/
 rem === Manipulate Data ==== 
 
+DDL commands, such as TRUNCATE, will fail if there is any DML command
+active on the table. A transaction will block the DDL command until the DML
+command is terminated with a COMMIT or a ROLLBACK.
+
 ■ INSERT
 ■ UPDATE
 ■ DELETE
@@ -2352,9 +2356,32 @@ order by department_name;
 
 
 
+=== Update Rows in a Table
+
+The UPDATE command changes column values in one or more existing rows in a single table. The basic syntax is the following:
+
+UPDATE table SET column=value [,column=value…] [WHERE condition];
+
+The more complex form of the command uses subqueries for one or more of the column values and for the WHERE condition.
+
+---example
+update
+	employees
+set salary = 10000
+where employee_id = 206
+;
 
 
-
+update 
+	employees
+set salary = salary * 1.1
+where department_id in
+	(
+		select department_id
+		from departments
+		where department_name like '%IT%'
+	)
+;
 
 
 
